@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot Access System</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f4f6f8;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 14px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,.08);
+        }
+
+        h1 {
+            margin-top: 0;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        button {
+            padding: 11px 16px;
+            border: 0;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .primary {
+            background: #111827;
+            color: white;
+            width: 100%;
+        }
+
+        .danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .logout {
+            background: #e5e7eb;
+        }
+
+        .bot {
+            border: 1px solid #ddd;
+            padding: 12px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        .active {
+            color: green;
+            font-weight: bold;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #message {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- LOGIN -->
+    <div id="loginPage" class="card">
+        <h1>Bot Access System</h1>
+
+        <input
+            id="email"
+            type="email"
+            placeholder="Email admin"
+        >
+
+        <input
+            id="password"
+            type="password"
+            placeholder="Password"
+        >
+
+        <button class="primary" onclick="login()">
+            Login
+        </button>
+
+        <p id="loginMessage"></p>
+    </div>
+
+
+    <!-- ADMIN PANEL -->
+    <div id="adminPage" class="hidden">
+
+        <div class="card">
+            <h1>Admin Panel</h1>
+
+            <input
+                id="botNumber"
+                type="text"
+                placeholder="628xxxxxxxxxx"
+            >
+
+            <button class="primary" onclick="addBot()">
+                + Tambah Nomor Bot
+            </button>
+
+            <button class="logout" onclick="logout()">
+                Logout
+            </button>
+
+            <p id="message"></p>
+        </div>
+
+
+        <div class="card">
+            <h2>Daftar Bot</h2>
+
+            <div id="botList">
+                Memuat data...
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const SUPABASE_URL = "https://iitutlxtpkzhjvkyjzcx.supabase.co/rest/v1/";
+const SUPABASE_KEY = "sb_publishable_nWMrLjjN_B7Qsnm0T7_Xag_kxZndVKp";
+
+const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
+
+
+// LOGIN
+async function login() {
+
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    const { error } =
+        await supabaseClient.auth.signInWithPassword({
+            email,
+            password
+        });
+
+    if (error) {
+        document.getElementById("loginMessage").textContent =
+            "❌ " + error.message;
+
+        return;
+    }
+
+    showAdmin();
+}
+
+
+// CEK SESSION
+async function checkSession() {
+
+    const {
+        data: { session }
+    } = await supabaseClient.auth.getSession();
+
+    if (session) {
+        showAdmin();
+    }
+}
+
+
+// TAMPILKAN ADMIN
+function showAdmin() {
+
+    document.getElementById("loginPage")
+        .classList.add("hidden");
+
+    document.getElementById("adminPage")
+        .classList.remove("hidden");
+
+    loadBots();
+}
+
+
+// LOGOUT
+async function logout() {
+
+    await supabaseClient.auth.signOut();
+
+    location.reload();
+}
+
+
+// TAMBAH BOT
+async function addBot() {
+
+    const number =
+        document.getElementById("botNumber").value.trim();
+
+    if (!number) {
+        alert("Masukkan nomor bot.");
+        return;
+    }
+
+    const { error } =
+        await supabaseClient
+            .from("bot_access")
+            .insert({
+                number: number,
+                active: true
+            });
+
+    if (error) {
+
+        document.getElementById("message").textContent =
+            "❌ " + error.message;
+
+        return;
+    }
+
+    document.getElementById("botNumber").value = "";
+
+    document.getElementById("message").textContent =
+        "✅ Nomor berhasil ditambahkan.";
+
+    loadBots();
+}
+
+
+// LOAD BOT
+async function loadBots() {
+
+    const { data, error } =
+        await supabaseClient
+            .from("bot_access")
+            .select("*")
+            .order("id", { ascending: false });
+
+    if (error) {
+
+        document.getElementById("botList").textContent =
+            "❌ " + error.message;
+
+        return;
+    }
+
+    const list =
+        document.getElementById("botList");
+
+    list.innerHTML = "";
+
+    if (!data.length) {
+        list.textContent = "Belum ada nomor bot.";
+        return;
+    }
+
+    data.forEach(bot => {
+
+        const div =
+            document.createElement("div");
+
+        div.className = "bot";
+
+        div.innerHTML = `
+            <strong>${bot.number}</strong><br>
+            <span class="active">
+                ${bot.active ? "🟢 ACTIVE" : "🔴 INACTIVE"}
+            </span>
+            <br>
+            <button class="danger"
+                onclick="deleteBot(${bot.id})">
+                Hapus
+            </button>
+        `;
+
+        list.appendChild(div);
+    });
+}
+
+
+// HAPUS BOT
+async function deleteBot(id) {
+
+    if (!confirm("Hapus nomor ini?")) {
+        return;
+    }
+
+    const { error } =
+        await supabaseClient
+            .from("bot_access")
+            .delete()
+            .eq("id", id);
+
+    if (error) {
+
+        alert(error.message);
+        return;
+    }
+
+    loadBots();
+}
+
+
+checkSession();
+
+</script>
+
+</body>
+</html>
