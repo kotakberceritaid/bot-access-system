@@ -168,19 +168,16 @@ td{padding:13px 9px;border-bottom:1px solid #ffffff0b}
 </div>
 
 <script type="module">
-import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-/* SUPABASE CONFIG */
-const SUPABASE_URL='https://psgbdscypzqckgrwvvnt.supabase.co';
-const SUPABASE_ANON_KEY='sb_publishable_CkUZeXhPnyybh4NWheZ21A_4QzaE75E';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-/* FIX: periksa format URL dan Publishable Key, bukan membandingkan
-   key dengan placeholder yang justru sama dengan key saat ini. */
-const configured=
-  SUPABASE_URL.startsWith('https://') &&
-  SUPABASE_ANON_KEY.startsWith('sb_publishable_');
+const SUPABASE_URL = 'https://psgbdscypzqckgrwvvnt.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_CkUZeXhPnyybh4NWheZ21A_4QzaE75E';
 
-const sb=configured?createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
+const sb = createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
 
 const $=id=>document.getElementById(id);
 let session=null,role='admin',bots=[];
